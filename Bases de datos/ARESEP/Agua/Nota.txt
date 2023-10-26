@@ -1,3 +1,0 @@
-Estos datos se descargaron del enlace https://aresep.go.cr/datos-abiertos/
-
-Para el caso de datos del mercado de los servicios regulados por operador, solamente se pueden descargar los datos año a año.
