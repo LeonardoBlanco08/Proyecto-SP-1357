@@ -1,0 +1,138 @@
+---
+title: "pba"
+author: "Paula Segura"
+date: "2023-10-28"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: '4'
+    df_print: paged
+    theme: paper
+---
+
+# Bibliotecas
+
+```{r}
+library(tidyverse)
+library(openxlsx)
+library(dplyr)
+library(magrittr)
+library(corrplot) # gráfico de correlación
+library(stats) # prcomp
+library(FactoMineR)
+library(factoextra)
+library(kableExtra)
+
+source('funcionesAuxiliares.R')
+```
+
+
+# Se cargan los datos
+
+```{r}
+base_INEC <- openxlsx::read.xlsx('Indicadores demográficos INEC.xlsx')
+rownames(base_INEC) <- base_INEC$anno
+
+anno_inicial <- 1960
+anno_final <- 2021
+
+base_INEC %<>% dplyr::filter(anno_inicial <= anno & anno <= anno_final)
+
+```
+
+# Visualizacion de las variables 
+
+```{r}
+
+# Visualizacion de todas las variables
+visualizacion_vars(base_INEC)
+
+```
+
+# Definicion de las variables finales 
+
+```{r, message = FALSE, warning = FALSE,cache=FALSE, results='asis'}
+
+# Base 1:
+# Se quita el año (para ser proyectado como variable suplementaria)
+base1 <- base_INEC %>%
+  select(-anno)
+
+# Base 2:
+# Se quitan todas las variables de conteo 
+base2 <- base_INEC %>%
+  select(!starts_with("t"))
+
+# Base 3:
+# Se toman las diferencias (cada 10 a;os)
+base3 <- apply(base2, MARGIN = 2, FUN = diff, lag = 10) %>% as.data.frame()
+
+# Visualizacion de todas las variables
+h <- 8 # altura
+pdf(file = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//Análisis exploratorio//Gráfico_series_conteos.pdf",   
+    width = 1.6 * h, 
+    height = h) 
+
+visualizacion_vars(base2)
+
+
+dev.off()
+
+```
+
+
+```{r}
+
+# Carga la librería necesaria
+library(stats)
+library(forecast)
+
+# Función para descomponer cada serie temporal
+descomponer_serie <- function(serie) {
+  
+  # Assuming your data is in a vector called time_series_data
+  time_series <- ts(serie)
+  
+  decomposed_series <- mstl(time_series) %>% as.data.frame()
+  
+  # Retornar la descomposición como dataframe
+  return(data.frame(tendencia = decomposed_series$Trend, 
+                    residuo = decomposed_series$Remainder))
+}
+
+# Descomponer todas las columnas
+list_of_descomp <- lapply(base2, descomponer_serie)
+
+# Ahora, list_of_descomp es una lista de dataframes, 
+# donde cada dataframe tiene las tres componentes de su columna correspondiente.
+
+# Convertir la lista de dataframes en un único dataframe
+base4 <- do.call(cbind, lapply(names(list_of_descomp), function(name) {
+  temp_df <- list_of_descomp[[name]]
+  colnames(temp_df) <- paste(name, colnames(temp_df), sep=".")
+  return(temp_df)
+}))
+
+rownames(base4) <- rownames(base2)
+
+```
+
+# PCA
+
+```{r, message = FALSE, warning = FALSE,cache=FALSE, results='asis'}
+
+base <- base2
+
+# Realizar el Análisis de Componentes Principales (ACP)
+res.pca <-  FactoMineR::PCA(base, scale.unit = TRUE, ncp = ncol(base),
+                            graph = FALSE)
+
+colores <- c(rep("red", 4), 
+             rep("blue", 7), 
+             rep("yellow", 6), 
+             rep("green", 12), 
+             rep("pink", 2))
+
+imprime_resultados_pca(res.pca) 
+
+```
