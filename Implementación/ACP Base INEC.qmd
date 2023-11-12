@@ -581,7 +581,7 @@ g
 
 ```{r}
 
-g <- factoextra::fviz_pca_var(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(2,3))  +  labs(title = "",
+g <- factoextra::fviz_pca(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(2,3))  +  labs(title = "",
          subtitle = "",
          x = TeX("$\\textbf{c^{2}}$ (12.48%)"),
          y = TeX("$\\textbf{c^{3}}$ (4.11%)"))
