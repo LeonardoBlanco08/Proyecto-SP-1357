@@ -608,7 +608,7 @@ g
 ## ACP con variables suplementarias
 
 ```{r}
-variables_sup <- which(!grepl("^t_.*$", colnames(base_INEC)))
+variables_sup <- which(!grepl("^t_.*$", colnames(base_ACP_sup)))
 
 
 ACPsup_INEC <- FactoMineR::PCA(base_ACP_sup, scale.unit = TRUE, 
@@ -616,13 +616,13 @@ ACPsup_INEC <- FactoMineR::PCA(base_ACP_sup, scale.unit = TRUE,
                             quanti.sup = variables_sup)
 
 plot(ACPsup_INEC, choix = "var")
-
+plot(ACPsup_INEC, choix = "ind")
 ```
 
 ## Plano principal
 
 ```{r}
-g <- factoextra::fviz_pca_ind(ACPsup_INEC, labelsize = 8, repel = TRUE) +  labs(title = "",
+g <- factoextra::fviz_pca_ind(ACPsup_INEC, labelsize = 8, repel = TRUE, axes = c(1,2)) +  labs(title = "",
          subtitle = "",
          x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
          y = TeX("$\\textbf{c^{2}}$ (12.48%)"))
@@ -641,4 +641,26 @@ ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Impl
 g
 ```
 
-# Círculo de correlaciones
+## Círculo de correlaciones
+
+```{r}
+g <- factoextra::fviz_pca_var(ACPsup_INEC, labelsize = 8, repel = TRUE, axes = c(1,2))  +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
+         y = TeX("$\\textbf{c^{2}}$ (12.48%)"))
+ 
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Círculo_correlaciones (suplementario).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
+```
+
