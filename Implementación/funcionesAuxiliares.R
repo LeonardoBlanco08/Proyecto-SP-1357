@@ -12,9 +12,13 @@ visualizacion_vars <- function(base_ACP){
   
   (ggplot(base_ACP_long, aes(x = anno, y = Valor)) +
     geom_line() +
-    facet_wrap(~ Variable, scales = "free_y") +
-    labs(x = "Fecha", y = "Valor") +
-    ggtitle("")) %>% print()
+    facet_wrap(~ Variable, scales = "free_y")  +
+      geom_smooth(method = "lm", se = FALSE, lwd = 0.5, color = "red") +
+    labs(x = "Año", y = "Valor") +
+      theme(strip.text = element_text(vjust = 1.1, size = 14, margin = margin()), 
+            axis.title.x = element_text(size = 20),
+            axis.title.y = element_text(size = 20))+
+    ggtitle(""))  %>% print()
   
 }
 

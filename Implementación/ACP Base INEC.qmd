@@ -34,10 +34,17 @@ anno_inicial <- 1960
 anno_final <- 2021
 
 base_ACP <- base_INEC %>%  dplyr::filter(anno_inicial <= anno & anno <= anno_final)
+
 base_ACP <- base_ACP %>%
   select(starts_with("t"))
+
+base_ACP_sup <- base_INEC %>%  dplyr::filter(anno_inicial <= anno & anno <= anno_final+1) %>% select(-anno)
+
+# base_ACP <- base_ACP %>% mutate(siglo = factor(c(rep("Siglo XX",40), rep("Siglo XXl", 22 ))))
+
 # cantidad de NA's por variable: 0
-# colSums(is.na(base_INEC)) 
+# colSums(is.na(base_INEC)) }
+
 ```
 
 
@@ -68,8 +75,8 @@ g <- ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
    name=TeX("$\\rho$")) +
   theme_cowplot()+ 
  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
-    size = 12, hjust = 1), axis.text.y = element_text(
-    size = 12))+
+    size = 15, hjust = 1), axis.text.y = element_text(
+    size = 15))+
  coord_fixed()+theme(
   axis.title.x = element_blank(),
   axis.title.y = element_blank(),
@@ -78,16 +85,18 @@ g <- ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
   panel.background = element_blank(),
   axis.ticks = element_blank(),
   legend.justification = c(1, 0),
-  legend.position = c(0.4, 0.8),
+  legend.position = c(0.5, 0.8), # 0.4,0.8
   legend.direction = "horizontal",
-   legend.title = element_text(size = 12))+
+   legend.title = element_text(size = 20))+
   guides(fill = guide_colorbar(barwidth = 10, barheight = 1.5,
                 title.position = "top", title.hjust = 0.5, direction = "horizontal"))
 
 g
 h <- 8
 w <- 1.6 * h
-ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//Análisis exploratorio//Gráfico_correlaciones.pdf", device = "pdf", plot = g, width = w, height = h)
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//Análisis exploratorio//Gráfico_correlaciones (todas las variables).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
 ```
 
 ```{r}
@@ -98,13 +107,13 @@ colnames(mat_cor) <- paste("$ texttt{",colnames(base_ACP),"}$", sep = "")
 rownames(mat_cor) <- colnames(mat_cor)
 mat_cor <- mat_cor %>% round(2)
 
-print(xtable(mat_cor, digits = 2), include.rownames =T, sanitize.colnames.function = identity)
+# print(xtable(mat_cor, digits = 2), include.rownames =T, sanitize.colnames.function = identity)
 
 ```
 
 
 ```{r}
-summary(base_ACP)
+# summary(base_ACP)
 ```
 
 # Análisis en componentes principales (normado)
@@ -114,24 +123,28 @@ Usamos $\texttt{ACP}$ de $\texttt{FactoMineR}$
 ```{r}
 ACP_INEC <- FactoMineR::PCA(base_ACP, scale.unit = TRUE, 
                             graph = FALSE, ncp = ncol(base_ACP))
-
+ACP_INEC$var$coord
 ```
 
 # Vectores propios
 
 ```{r}
-# X <- scale(base_ACP, center = T, scale = T)
-# R <- cov(X)
+X <- scale(base_ACP, center = T, scale = T)
+R <- cov(X)
 # U <- ACP_INEC$svd$V
 # U <- eigen(R)$vectors
 # colSums(U^2)
+
 u <- ACP_INEC$svd$V
+
+
+
 vectores_propios <- data.frame(u)
 vectores_propios <- round(vectores_propios, 2)
 nombres <- paste0("$\ mathbf{u_{",1:16,"}}$")
 colnames(vectores_propios) <- nombres
 
-print(xtable(vectores_propios, digits = 2), include.rownames =F, sanitize.colnames.function = identity)
+# print(xtable(vectores_propios, digits = 2), include.rownames =F, sanitize.colnames.function = identity)
 
 
 ```
@@ -146,7 +159,7 @@ Se prepara tabla para ponerla en Latex:
 
 ```{r}
 rownames(resumen_comp) <- 1:nrow(resumen_comp)
-xtable(resumen_comp, digits = c(0,9,9,9), label = "", caption = "", align = "r|rrr")
+# xtable(resumen_comp, digits = c(0,9,9,9), label = "", caption = "", align = "r|rrr")
 ```
 
 # Componentes principales
@@ -156,7 +169,7 @@ nombres <- paste0("$\ mathbf{c_{",1:16,"}}$")
 c <- ACP_INEC$ind$coord %>% round(2) %>% data.frame()
 colnames(c) <- nombres
 rownames(c) <- 1960:2021
-print(xtable(c), include.rownames =T, sanitize.colnames.function = identity)
+# print(xtable(c), include.rownames =T, sanitize.colnames.function = identity)
 
 ```
 
@@ -164,7 +177,11 @@ print(xtable(c), include.rownames =T, sanitize.colnames.function = identity)
 # Resultados para los invididuos
 
 ```{r}
-resultados_ind <- factoextra::get_pca_ind(ACP_INEC)
+resultados_ind <- factoextra::get_pca_ind(ACP_INEC, axes = 1:3)
+
+cos2 <- data.frame(resultados_ind$cos2)
+
+cumsum(t(cos2[17,]))
 ```
 
 ## Coordenadas de los individuos en el primer plano principal
@@ -179,29 +196,26 @@ coord_ind <- resultados_ind$coord
 ```{r}
 cos2_ind <- resultados_ind$cos2
 
-a
-rowSums(a)
-colSums(resultados_ind$contrib)
+rowSums(cos2_ind)
+colSums(cos2_ind)
 ```
 
 ```{r}
 g <- fviz_cos2(ACP_INEC, choice = "ind", axes = 1:2) + labs(title = "",
          subtitle = "",
          x = TeX("Año"),
-         y = TeX("$cos(\\alpha)=cos(\\alpha_{1})+cos(\\alpha_{2})$"))
+         y = "Coseno cuadrado")
+
 g <- g + theme_cowplot() + theme(
-    axis.title.x = element_text(size =12),
-        axis.title.y = element_text(size =12),
-    axis.text.x = element_text(size = 8, angle = 45, vjust = 0.6),
-    axis.text.y = element_text(size = 10),
-    plot.title = element_text(size = 14),
-    plot.subtitle = element_text(size = 12)
-  ) 
+    axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.6),
+    axis.text.y = element_text(size = 15, angle = 0)
+  )  + geom_hline(yintercept = 0.5, linetype = 2, color = "red")
 
 h <- 8
-w <- 1.6 * h
-
-ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Gráfico_comunalidad_individuos.pdf", device = "pdf", plot = g, width = w, height = h)
+w <- 1.6*h
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Gráfico_cos2_individuos.pdf", device = "pdf", plot = g, width = w, height = h)
 
 g
 ```
@@ -211,60 +225,25 @@ g
 ```{r}
 g <- fviz_contrib(ACP_INEC, choice = "ind", axes = 1:2)+ labs(title = "",
          subtitle = "",
-         x = TeX("Año"),
-         y = TeX("Contribución (%): ($||Pr_{\\textbf{u}_{1}}(\\textbf{x}_{i})||+||Pr_{\\textbf{u}_{2}}(\\textbf{x}_{i})||$)"))
+         x = "Año",
+         y ="Contribución (%)")
+
+# g <- g + coord_flip()
+
 g <- g + theme_cowplot() + theme(
-    axis.title.x = element_text(size =12),
-        axis.title.y = element_text(size =12),
-    axis.text.x = element_text(size = 8, angle = 45, vjust = 0.6),
-    axis.text.y = element_text(size = 10),
-    plot.title = element_text(size = 14),
-    plot.subtitle = element_text(size = 12)
+    axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+    axis.text.x = element_text(size = 15, angle = 90, vjust = 0.6),
+    axis.text.y = element_text(size = 15, angle = 0)
   ) 
+
 h <- 8
-w <- 1.6 * h
+w <- 1.6*h
 
 ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Gráfico_contribuciones_individuos.pdf", device = "pdf", plot = g, width = w, height = h)
 
 g
 ```
-
-```{r}
-base_ACP_diff  <- base_ACP
-base_ACP_diff[, c(1:7, 17:20, 27)] <- log(base_ACP_diff[, c(1:7, 17:20, 27)])
-base_ACP_diff <- apply(base_ACP_diff, MARGIN = 2, FUN = diff)
-
-
-```
-
-
-```{r}
-ACP_INEC_diff <-  FactoMineR::PCA(base_ACP_diff, scale.unit = TRUE, 
-                            graph = FALSE)
-```
-
-```{r}
-summary(ACP_INEC_diff)
-```
-
-
-```{r}
-
-factoextra::fviz_pca_var(ACP_INEC_diff, repel = TRUE) + theme_cowplot()
-```
-
-```{r}
-factoextra::fviz_pca_ind(ACP_INEC_diff)
-```
-
-```{r}
-factoextra::fviz_pca_biplot(ACP_INEC_diff)
-```
-
-```{r}
-factoextra::fviz_eig(ACP_INEC_diff)
-```
-
 
 
 
@@ -284,18 +263,31 @@ print(xtable(coord_var), include.rownames =T, sanitize.colnames.function = ident
 ## Calidad de la representación de las variables en el primer plano principal
 
 ```{r}
+# cos2_var <- as.data.frame(ACP_INEC$var$cos2)
+# row.names(cos2_var)[12]
+# 
+# rowSums(cos2_var)
+# 
+# den <- sum(colSums(cos2_var)[c(1,2)])
+# 
+# 100 * rowSums(cos2_var[,c(1,2)]/den)
+# 
+# ACP_INEC$var$contrib[1,1]
+# 
+# 100*(den/16)/den
+```
+
+```{r}
 g <- fviz_cos2(ACP_INEC, choice = "var", axes = 1:2) + labs(title = "",
          subtitle = "",
-         x = TeX("Variable"),
-         y = TeX("Comunalidad:  $r^{2}(\\textbf{c}^{1},\\textbf{x}^{j})+r^{2}(\\textbf{c}^{2},\\textbf{x}^{j})$"))
+         x = "Variable",
+         y = "Comunalidad")
 g <- g + theme_cowplot() + theme(
-    axis.title.x = element_text(size =12),
-        axis.title.y = element_text(size =12),
-    axis.text.x = element_text(size = 8, angle = 45, vjust = 0.6),
-    axis.text.y = element_text(size = 10),
-    plot.title = element_text(size = 14),
-    plot.subtitle = element_text(size = 12)
-  ) 
+    axis.title.x = element_text(size =20),
+        axis.title.y = element_text(size =20),
+    axis.text.x = element_text(size = 20, angle = 45, vjust = 0.6),
+    axis.text.y = element_text(size = 20)
+  ) + geom_hline(yintercept = 0.5, linetype = 2, color = "red")
 
 h <- 8
 w <- 1.6 * h
@@ -305,7 +297,7 @@ ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Impl
 g
 ```
 
-## Contribución de los individuos en el primer plano principal
+## Contribución de las variables en el primer plano principal
 
 ```{r}
 g <- fviz_contrib(ACP_INEC, choice = "var", axes = 1:2) + labs(title = "",
@@ -313,12 +305,10 @@ g <- fviz_contrib(ACP_INEC, choice = "var", axes = 1:2) + labs(title = "",
          x = TeX("Variable"),
          y = TeX("Contribución (%)"))
 g <- g + theme_cowplot() + theme(
-    axis.title.x = element_text(size =12),
-        axis.title.y = element_text(size =12),
-    axis.text.x = element_text(size = 8, angle = 45, vjust = 0.6),
-    axis.text.y = element_text(size = 10),
-    plot.title = element_text(size = 14),
-    plot.subtitle = element_text(size = 12)
+    axis.title.x = element_text(size =20),
+        axis.title.y = element_text(size =20),
+    axis.text.x = element_text(size = 20, angle = 45, vjust = 0.6),
+    axis.text.y = element_text(size = 20)
   ) 
 
 h <- 8
@@ -333,37 +323,146 @@ g
 
 ## Círculo de correlaciones
 
+### Ejes 1 y 2
+
 ```{r}
 
-g <- plot(ACP_INEC, choix = "var")  +  labs(title = "",
+g <- factoextra::fviz_pca_var(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(1,2))  +  labs(title = "",
          subtitle = "",
          x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
          y = TeX("$\\textbf{c^{2}}$ (12.48%)"))
-
-g <- g + theme( axis.title=element_text(size=15)) + theme_cowplot()
+ 
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
 h <- 8
 w <- 1.6 * h
+
 ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Círculo_correlaciones.pdf", device = "pdf", plot = g, width = w, height = h)
 
+g
 
+```
+### Ejes 1 y 3
+
+```{r}
+
+g <- factoextra::fviz_pca_var(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(1,3))  +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
+         y = TeX("$\\textbf{c^{3}}$ (4.11%)"))
+ 
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Círculo_correlaciones (1 y 3).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
+
+```
+
+### Ejes 2 y 3
+
+```{r}
+
+g <- factoextra::fviz_pca_var(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(2,3))  +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{2}}$ (12.48%)"),
+         y = TeX("$\\textbf{c^{3}}$ (4.11%)"))
+ 
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Círculo_correlaciones (2 y 3).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
 
 ```
 
 ## Plano principal
 
+### Ejes 1 y 2
+
 ```{r}
-g <- factoextra::fviz_pca_ind(ACP_INEC)  +  labs(title = "",
+g <- factoextra::fviz_pca_ind(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(1,2)) +  labs(title = "",
          subtitle = "",
          x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
          y = TeX("$\\textbf{c^{2}}$ (12.48%)"))
 
-g <- g + theme( axis.title=element_text(size=15)) + theme_cowplot()
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
 h <- 8
 w <- 1.6 * h
 ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Primer_plano_principal.pdf", device = "pdf", plot = g, width = w, height = h)
 
+g
+```
+### Ejes 1 y 3
+
+```{r}
+g <- factoextra::fviz_pca_ind(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(1,3)) +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
+         y = TeX("$\\textbf{c^{3}}$ (4.11%)"))
+
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Primer_plano_principal (1 y 3).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
 ```
 
+### Ejes 2 y 3
+
+```{r}
+g <- factoextra::fviz_pca_ind(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(2,3)) +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{2}}$ (12.48%%)"),
+         y = TeX("$\\textbf{c^{3}}$ (4.11%)"))
+
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Primer_plano_principal (2 y 3).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
+```
 ## Gráfico del codo
 
 ```{r}
@@ -372,7 +471,12 @@ g <- factoextra::fviz_eig(ACP_INEC, ncp = 16)  +  labs(title = "",
          x = TeX("Componente principal"),
          y = TeX("Inercia explicada (%)"))
 
-g <- g + theme( axis.title=element_text(size=15)) + theme_cowplot()
+g <- g + theme_cowplot() +  theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20)
+) 
 
 
 h <- 8
@@ -407,7 +511,12 @@ g <- ggplot(eigenvalue_df, aes(x = componente, y = autovalor)) +
     plot.subtitle = element_text(size = 12)
   )
 nombres <- TeX(paste0("$\\textbf{c^{",1:16,"}}$"))
-g <- g + scale_x_continuous(breaks = 1:16) + scale_y_continuous(breaks = seq(0,13,1)) + theme_cowplot()
+g <- g + scale_x_continuous(breaks = 1:16) + scale_y_continuous(breaks = seq(0,13,1)) + theme_cowplot() +  theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20)
+) 
 
 h <- 8
 w <- 1.6 * h
@@ -417,19 +526,119 @@ ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Impl
 g
 ```
 
-## Biplot
+# Biplot
 
+### Ejes 1 y 2
 
 ```{r}
-g <- factoextra::fviz_pca(ACP_INEC)  +  labs(title = "",
+
+g <- factoextra::fviz_pca(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(1,2))  +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
+         y = TeX("$\\textbf{c^{2}}$ (12.48%)"))
+ 
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Biplot.pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
+
+```
+### Ejes 1 y 3
+
+```{r}
+
+g <- factoextra::fviz_pca(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(1,3))  +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
+         y = TeX("$\\textbf{c^{3}}$ (4.11%)"))
+ 
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Biplot (1 y 3).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
+
+```
+
+### Ejes 2 y 3
+
+```{r}
+
+g <- factoextra::fviz_pca_var(ACP_INEC, labelsize = 8, repel = TRUE, axes = c(2,3))  +  labs(title = "",
+         subtitle = "",
+         x = TeX("$\\textbf{c^{2}}$ (12.48%)"),
+         y = TeX("$\\textbf{c^{3}}$ (4.11%)"))
+ 
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
+h <- 8
+w <- 1.6 * h
+
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Biplot (2 y 3).pdf", device = "pdf", plot = g, width = w, height = h)
+
+g
+
+```
+
+# Proyecciones suplementarias
+
+
+## ACP con variables suplementarias
+
+```{r}
+variables_sup <- which(!grepl("^t_.*$", colnames(base_INEC)))
+
+
+ACPsup_INEC <- FactoMineR::PCA(base_ACP_sup, scale.unit = TRUE, 
+                            graph = FALSE, ncp = ncol(base_ACP),  ind.sup = 63,
+                            quanti.sup = variables_sup)
+
+plot(ACPsup_INEC, choix = "var")
+
+```
+
+## Plano principal
+
+```{r}
+g <- factoextra::fviz_pca_ind(ACPsup_INEC, labelsize = 8, repel = TRUE) +  labs(title = "",
          subtitle = "",
          x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
          y = TeX("$\\textbf{c^{2}}$ (12.48%)"))
 
-g <- g + theme( axis.title=element_text(size=15)) + theme_cowplot()
+g <- g + theme_cowplot() + theme(
+  axis.title.x = element_text(size = 20),
+  axis.title.y = element_text(size = 20),
+  axis.text.x = element_text(size = 20),
+  axis.text.y = element_text(size = 20),
+  legend.text = element_text(size = 20)
+) 
 h <- 8
 w <- 1.6 * h
-ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Biplot.pdf", device = "pdf", plot = g, width = w, height = h)
+ggsave(filename = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//ACP//Primer_plano_principal (suplementario).pdf", device = "pdf", plot = g, width = w, height = h)
 
 g
 ```
+
+# Círculo de correlaciones

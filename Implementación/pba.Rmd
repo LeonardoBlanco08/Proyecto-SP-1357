@@ -61,7 +61,7 @@ base1 <- base_INEC %>%
 # Base 2:
 # Se quitan todas las variables de conteo 
 base2 <- base_INEC %>%
-  select(!starts_with("t"))
+  select(starts_with("t"))
 
 # Base 3:
 # Se toman las diferencias (cada 10 a;os)
@@ -69,7 +69,7 @@ base3 <- apply(base2, MARGIN = 2, FUN = diff, lag = 10) %>% as.data.frame()
 
 # Visualizacion de todas las variables
 h <- 8 # altura
-pdf(file = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//Análisis exploratorio//Gráfico_series_conteos.pdf",   
+pdf(file = "C://Users//Peanuts//Documents//GitHub//Proyecto-SP-1357//Implementación//Gráficos//Análisis exploratorio//Gráfico_series_tasas.pdf",   
     width = 1.6 * h, 
     height = h) 
 
