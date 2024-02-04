@@ -622,7 +622,7 @@ plot(ACPsup_INEC, choix = "ind")
 ## Plano principal
 
 ```{r}
-g <- factoextra::fviz_pca_ind(ACPsup_INEC, labelsize = 8, repel = TRUE, axes = c(1,2)) +  labs(title = "",
+g <- factoextra::fviz_pca_ind(ACPsup_INEC, labelsize = 8, repel = TRUE, axes = c(1,2), col.ind.sup = "#4682b4") +  labs(title = "",
          subtitle = "",
          x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
          y = TeX("$\\textbf{c^{2}}$ (12.48%)"))
@@ -644,7 +644,7 @@ g
 ## Círculo de correlaciones
 
 ```{r}
-g <- factoextra::fviz_pca_var(ACPsup_INEC, labelsize = 8, repel = TRUE, axes = c(1,2))  +  labs(title = "",
+g <- factoextra::fviz_pca_var(ACPsup_INEC, labelsize = 8, repel = TRUE, axes = c(1,2), col.quanti.sup = "#4682b4")  +  labs(title = "",
          subtitle = "",
          x = TeX("$\\textbf{c^{1}}$ (76.81%)"),
          y = TeX("$\\textbf{c^{2}}$ (12.48%)"))

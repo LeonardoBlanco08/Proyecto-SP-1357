@@ -1,0 +1,169 @@
+---
+title: "tSNE Base INEC"
+format: pdf
+---
+
+```{r}
+options(scipen=999)
+```
+
+# Bibliotecas
+
+```{r}
+# library(openxlsx)
+library(dplyr)
+# library(magrittr)
+# library(corrplot) # gráfico de correlación
+# library(stats) # prcomp
+# library(FactoMineR)
+# library(factoextra)
+# library(xtable)
+# library(latex2exp)
+library(cowplot)
+library(ggplot2)
+library(tsne)
+library(Rtsne)
+library(umap)
+
+```
+
+# Se cargan los datos
+
+```{r}
+base_INEC <- openxlsx::read.xlsx('Indicadores demográficos INEC.xlsx')
+rownames(base_INEC) <- base_INEC$anno
+```
+
+```{r}
+anno_inicial <- 1960
+anno_final <- 2021
+
+base_tSNE <- base_INEC %>%  dplyr::filter(anno_inicial <= anno & anno <= anno_final) %>%
+  select(starts_with("t"))
+
+
+# cantidad de NA's por variable: 0
+# colSums(is.na(base_tSNE)) 
+```
+
+# t-SNE con paquete $\texttt{tsne}$ 
+
+```{r}
+tSNE_INEC <- tsne::tsne(base_tSNE, initial_dims = 2, perplexity = 30)
+```
+
+```{r}
+# Conversion of matrix to dataframe
+tsne_plot <- data.frame(x = tSNE_INEC[,1], 
+                        y = tSNE_INEC[,2])
+ 
+# Plotting the plot using ggplot() function
+ggplot(tsne_plot) + geom_point(aes(x=x,y=y))
+```
+
+# t-SNE con paquete $\texttt{Rtsne}$ 
+
+```{r}
+tSNE_INEC <- Rtsne::Rtsne(X = base_tSNE, 
+                          dims = 2, 
+                          perplexity = 6, 
+                          pca = TRUE, 
+                          pca_center = TRUE,
+                          pca_scale = TRUE)
+
+# Conversion of matrix to dataframe
+tsne_plot <- data.frame(x = tSNE_INEC$Y[,1], 
+                        y = tSNE_INEC$Y[,2]) %>% mutate(decada = paste0(floor(1960:2021/10) * 10, "s"))
+ 
+# Plotting the plot using ggplot() function
+ggplot(tsne_plot, aes(x=x, y=y)) +
+  geom_point(aes(color = decada)) +
+  theme_cowplot() +
+  labs(title = "Gráfico t-SNE",
+       x = "Dimensión 1",
+       y = "Dimensión 2",
+       color = "Década")
+```
+```{r}
+set.seed(27)
+# Vector de perplejidades a probar
+perplexities <- c(4:8)
+
+# Crear una función para visualizar el t-SNE con diferentes perplejidades
+visualizar_tsne <- function(perplexity) {
+  tSNE_INEC <- Rtsne::Rtsne(X = base_tSNE, 
+                            dims = 2, 
+                            perplexity = perplexity, 
+                            pca = FALSE)
+                            # pca_center = TRUE,
+                            # pca_scale = TRUE
+  
+  tsne_plot <- data.frame(x = tSNE_INEC$Y[,1], 
+                          y = tSNE_INEC$Y[,2]) %>% 
+    mutate(decada = paste0(floor(1960:2021/10) * 10, "s"))
+  
+  ggplot(tsne_plot, aes(x=x, y=y)) +
+    geom_point(aes(color = decada)) +
+    theme_cowplot() +
+    labs(title = paste("t-SNE con perplejidad =", perplexity),
+         x = "Dimensión 1",
+         y = "Dimensión 2",
+         color = "Década")
+}
+
+# Iterar sobre diferentes perplejidades y visualizar los resultados
+for (perplexity in perplexities) {
+  print(visualizar_tsne(perplexity))
+}
+
+```
+
+# UMAP con paquete $\texttt{umap}$ 
+
+```{r}
+UMAP_INEC <- umap::umap(d = base_tSNE)
+```
+
+```{r}
+
+
+# Crear una función para visualizar el t-SNE con diferentes perplejidades
+
+  tsne_plot <- data.frame(x = UMAP_INEC$layout[,1], 
+                          y = UMAP_INEC$layout[,2]) %>% 
+    mutate(decada = paste0(floor(1960:2021/10) * 10, "s"))
+  
+  ggplot(tsne_plot, aes(x=x, y=y)) +
+    geom_point(aes(color = decada)) +
+    theme_cowplot() +
+    labs(title = "UMAP",
+         x = "Dimensión 1",
+         y = "Dimensión 2",
+         color = "Década")
+
+```
+
+
+# Árbol jerárquico ascendente
+
+```{r}
+d.L2 <- dist(base_tSNE, method = "euclidean")
+clasif <- hclust(d.L2, method = "average")
+```
+
+```{r}
+plot(clasif)
+hclust(clasif, k=3, border = "red")
+```
+```{r}
+source("http://addictedtor.free.fr/packages/A2R/lastVersion/R/code.R")
+op = par(bg = "#EFEFEF")
+A2Rplot(clasif, k = 3, boxes = T, col.up = "gray50", col.down = c("#FF6B6B",
+"#4ECDC4", "#556270"))
+```
+
+```{r}
+factoextra::fviz_dend(clasif, k = 3, cex = 0.4, horiz = TRUE, k_colors = "jco",
+rect = TRUE, rect_border = "jco", rect_fill = TRUE)
+```
+
