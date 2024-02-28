@@ -195,8 +195,8 @@ coord_ind <- resultados_ind$coord
 
 ```{r}
 cos2_ind <- resultados_ind$cos2
-
 rowSums(cos2_ind)
+
 colSums(cos2_ind)
 ```
 
